@@ -1,19 +1,32 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const useSoundEffects = () => {
   const { soundEnabled } = useApp();
-
-  const audioContext = useMemo(() => {
-    return new (window.AudioContext || window.webkitAudioContext)();
-  }, []);
+  const audioContextRef = useRef(null);
 
   const playSound = useCallback((type) => {
     if (!soundEnabled) return;
     
     try {
+      // Create AudioContext only when needed and reuse it
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      const audioContext = audioContextRef.current;
+
+      // Check if context is closed
+      if (audioContext.state === 'closed') {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        return;
+      }
+
       if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch(() => {
+          // Silently fail if resume doesn't work
+          return;
+        });
       }
 
       const oscillator = audioContext.createOscillator();
@@ -36,9 +49,10 @@ export const useSoundEffects = () => {
         oscillator.stop(audioContext.currentTime + 0.05);
       }
     } catch (error) {
-      console.error('Sound effect error:', error);
+      // Silently fail - don't spam console
+      return;
     }
-  }, [soundEnabled, audioContext]);
+  }, [soundEnabled]);
 
   return { playSound };
 };

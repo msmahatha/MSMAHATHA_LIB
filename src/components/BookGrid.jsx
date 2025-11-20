@@ -7,9 +7,14 @@ const BookGrid = ({ onOpenBook, onOpenAuth }) => {
   const { query, page, setPage, isLoading, setIsLoading, viewMode, stash, history, user } = useApp();
   const [books, setBooks] = useState([]);
   const [error, setError] = useState(null);
+  const [cache, setCache] = useState({});
 
   useEffect(() => {
     if (viewMode === 'grid') {
+      // Check cache first for instant display
+      if (cache[query]) {
+        setBooks(cache[query]);
+      }
       loadBooks(true);
     } else if (viewMode === 'stash') {
       setBooks(stash);
@@ -20,8 +25,15 @@ const BookGrid = ({ onOpenBook, onOpenAuth }) => {
     }
   }, [query, viewMode]);
 
+  // Separate effect for page changes
+  useEffect(() => {
+    if (viewMode === 'grid' && page > 1) {
+      loadBooks(false);
+    }
+  }, [page]);
+
   const loadBooks = async (reset = false) => {
-    if (isLoading) return;
+    if (isLoading && !reset) return;
     
     setIsLoading(true);
     setError(null);
@@ -32,13 +44,18 @@ const BookGrid = ({ onOpenBook, onOpenAuth }) => {
       if (reset) {
         setBooks(results);
         setPage(1);
+        // Cache the results for this query
+        setCache(prev => ({ ...prev, [query]: results }));
       } else {
-        setBooks(prev => [...prev, ...results]);
+        const newBooks = [...books, ...results];
+        setBooks(newBooks);
+        setCache(prev => ({ ...prev, [query]: newBooks }));
       }
+      
+      setIsLoading(false);
     } catch (err) {
       setError('NETWORK ERROR');
       console.error(err);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -62,10 +79,10 @@ const BookGrid = ({ onOpenBook, onOpenAuth }) => {
         <div className="h-64 flex flex-col items-center justify-center">
           <div className="w-16 h-16 bg-neo-yellow border-3 border-neo-black animate-spin mb-4"></div>
           <div className="font-display text-2xl animate-pulse text-center px-4">
-            CONNECTING_MULTIVERSE...
+            LOADING_BOOKS...
           </div>
         </div>
-      ) : error ? (
+      ) : error && books.length === 0 ? (
         <div className="col-span-full text-center font-bold text-neo-red p-10">{error}</div>
       ) : books.length === 0 ? (
         <div className="col-span-full text-center font-bold p-10 text-gray-500">

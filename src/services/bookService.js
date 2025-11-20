@@ -1,27 +1,32 @@
 const API_GOOGLE = "https://www.googleapis.com/books/v1/volumes";
 const API_GUTENDEX = "https://gutendex.com/books";
 
+// Helper function to fetch with timeout
+const fetchWithTimeout = (url, timeout = 3000) => {
+  return Promise.race([
+    fetch(url).then(r => r.json()),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), timeout)
+    )
+  ]).catch(() => ({}));
+};
+
 export const fetchFederatedBooks = async (query, page = 1) => {
-  const startIndex = (page - 1) * 20;
+  const startIndex = (page - 1) * 15;
   
-  const promises = [
-    // Google Books
-    fetch(`${API_GOOGLE}?q=subject:${encodeURIComponent(query)}&filter=free-ebooks&startIndex=${startIndex}&maxResults=10`)
-      .then(r => r.json())
-      .catch(() => ({})),
-
-    // Gutendex
-    fetch(`${API_GUTENDEX}?topic=${encodeURIComponent(query)}&page=${page}`)
-      .then(r => r.json())
-      .catch(() => ({})),
-
-    // Open Library
-    fetch(`https://openlibrary.org/search.json?q=subject:${encodeURIComponent(query)}&page=${page}&limit=10&has_fulltext=true`)
-      .then(r => r.json())
-      .catch(() => ({}))
-  ];
-
-  const [googleData, gutendexData, openData] = await Promise.all(promises);
+  // Fetch both APIs in parallel
+  const [googleData, gutendexData] = await Promise.all([
+    fetchWithTimeout(
+      `${API_GOOGLE}?q=subject:${encodeURIComponent(query)}&filter=free-ebooks&startIndex=${startIndex}&maxResults=12`,
+      3000
+    ),
+    fetchWithTimeout(
+      `${API_GUTENDEX}?topic=${encodeURIComponent(query)}&page=${page}`,
+      3000
+    )
+  ]);
+  
+  const openData = {}; // Disabled Open Library
   
   let results = [];
 

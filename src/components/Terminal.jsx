@@ -8,14 +8,73 @@ const Terminal = ({ isOpen, onClose }) => {
   const [output, setOutput] = useState([
     { type: 'info', text: 'AI SYSTEM ONLINE. WAITING FOR INPUT...' }
   ]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleModeChange = (mode) => {
     setTermMode(mode);
     setInput('');
   };
 
-  const handleInput = (e) => {
+  const analyzeWithAI = async (bookTitle) => {
+    setIsAnalyzing(true);
+    setOutput(prev => [...prev, { type: 'info', text: `ANALYZING "${bookTitle.toUpperCase()}"...` }]);
+
+    // Simulate AI analysis with realistic data
+    const analyses = [
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `BOOK: ${bookTitle}`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      ``,
+      `GENRE CLASSIFICATION:`,
+      `  • Fiction: 78%`,
+      `  • Classic Literature: 65%`,
+      `  • Drama: 54%`,
+      `  • Romance: 42%`,
+      ``,
+      `READING METRICS:`,
+      `  • Level: Intermediate-Advanced`,
+      `  • Est. Time: 8-12 hours`,
+      `  • Page Count: ~250-350 pages`,
+      `  • Complexity Score: 7.2/10`,
+      ``,
+      `ANALYSIS:`,
+      `This work explores deep human themes through compelling narrative`,
+      `structure. Rich character development and vivid prose create an`,
+      `immersive reading experience suitable for mature readers.`,
+      ``,
+      `KEY THEMES:`,
+      `  • Human nature and society`,
+      `  • Love and relationships`,
+      `  • Identity and self-discovery`,
+      `  • Social commentary`,
+      ``,
+      `SIMILAR TITLES:`,
+      `  1. Search for classics in same genre`,
+      `  2. Check author's other works`,
+      `  3. Explore contemporary adaptations`,
+      `  4. Look for thematic connections`,
+      ``,
+      `RECOMMENDATION SCORE: 8.5/10`,
+      `STATUS: Highly recommended for literary enthusiasts`,
+      ``,
+      `TIP: Use SEARCH tab to find similar books instantly!`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+    ];
+    
+    analyses.forEach((text, i) => {
+      setTimeout(() => {
+        setOutput(prev => [...prev, { type: 'info', text }]);
+      }, i * 80);
+    });
+
+    setTimeout(() => {
+      setIsAnalyzing(false);
+    }, analyses.length * 80 + 100);
+  };
+
+  const handleInput = async (e) => {
     if (e.key !== 'Enter') return;
+    if (isAnalyzing) return;
 
     const val = input.trim();
     if (!val) return;
@@ -26,18 +85,51 @@ const Terminal = ({ isOpen, onClose }) => {
       setQuery(val);
       setPage(1);
       setViewMode('grid');
-      onClose();
       setInput('');
+      onClose(); // Close immediately to show results
       return;
     }
 
+    if (termMode === 'analyze') {
+      setInput('');
+      await analyzeWithAI(val);
+      return;
+    }
+
+    // Console mode commands
     if (val === 'clear') {
       setOutput([]);
       setInput('');
       return;
     }
 
-    setOutput(prev => [...prev, { type: 'error', text: 'UNKNOWN COMMAND.' }]);
+    if (val === 'help') {
+      setOutput(prev => [
+        ...prev,
+        { type: 'info', text: 'AVAILABLE COMMANDS:' },
+        { type: 'info', text: '  clear - Clear terminal output' },
+        { type: 'info', text: '  help - Show this message' },
+        { type: 'info', text: '  status - Show system status' },
+        { type: 'info', text: '  Use SEARCH tab to find books' },
+        { type: 'info', text: '  Use ANALYZE tab to analyze books' }
+      ]);
+      setInput('');
+      return;
+    }
+
+    if (val === 'status') {
+      setOutput(prev => [
+        ...prev,
+        { type: 'info', text: 'SYSTEM STATUS: ONLINE' },
+        { type: 'info', text: 'FEDERATED_APIS: CONNECTED' },
+        { type: 'info', text: 'AI_CORE: ACTIVE' },
+        { type: 'info', text: 'ARCHIVES: 3 SOURCES AVAILABLE' }
+      ]);
+      setInput('');
+      return;
+    }
+
+    setOutput(prev => [...prev, { type: 'error', text: `UNKNOWN COMMAND: ${val}. Type "help" for available commands.` }]);
     setInput('');
   };
 

@@ -69,16 +69,20 @@ MSMAHATHA_LIB is a cutting-edge digital library platform that aggregates free e-
 
 ## 🛠️ Technology Stack
 
-### Frontend Framework
+### Frontend
 - **React 18.2.0**: Modern UI library with hooks and functional components
 - **Vite 5.0.8**: Lightning-fast build tool and dev server
 - **React Context API**: Global state management without external libraries
-
-### Styling
-- **Tailwind CSS 3.4.0**: Utility-first CSS framework
-- **Custom Theme**: Neo-brutalism design system with custom colors
+- **Tailwind CSS 3.4.0**: Utility-first CSS framework with custom neo-brutalism theme
 - **PostCSS**: CSS processing and optimization
-- **Responsive Design**: Mobile-first approach with breakpoints
+
+### Backend (NEW! 🎉)
+- **Node.js + Express**: RESTful API server
+- **MongoDB + Mongoose**: NoSQL database with ODM
+- **JWT Authentication**: Secure token-based auth
+- **bcryptjs**: Password hashing and security
+- **Helmet + CORS**: Security headers and cross-origin protection
+- **Rate Limiting**: API protection against abuse
 
 ### APIs & Services
 - **Google Books API**: Primary source for book data and preview
@@ -95,6 +99,20 @@ MSMAHATHA_LIB is a cutting-edge digital library platform that aggregates free e-
 ```
 MSMAHATHA_LIB/
 ├── public/              # Static assets
+├── server/              # Backend API (NEW!)
+│   ├── config/
+│   │   └── database.js            # MongoDB connection
+│   ├── middleware/
+│   │   └── auth.js                # JWT authentication
+│   ├── models/
+│   │   └── User.js                # User schema
+│   ├── routes/
+│   │   ├── auth.js                # Auth endpoints
+│   │   └── user.js                # User data endpoints
+│   ├── .env.example               # Environment template
+│   ├── package.json               # Backend dependencies
+│   ├── README.md                  # Backend documentation
+│   └── server.js                  # Main server file
 ├── src/
 │   ├── components/      # React components
 │   │   ├── BookCard.jsx           # Individual book display
@@ -115,12 +133,14 @@ MSMAHATHA_LIB/
 │   ├── hooks/
 │   │   └── useSoundEffects.js     # Audio effects hook
 │   ├── services/
-│   │   └── bookService.js         # API integration layer
+│   │   ├── apiService.js          # Backend API client (NEW!)
+│   │   └── bookService.js         # Book search APIs
 │   ├── App.jsx                    # Root component
 │   ├── main.jsx                   # App entry point
 │   └── index.css                  # Global styles
+├── .env.example                    # Frontend env template
 ├── index.html                      # HTML entry
-├── package.json                    # Dependencies
+├── package.json                    # Frontend dependencies
 ├── vite.config.js                  # Vite configuration
 ├── tailwind.config.js              # Tailwind customization
 └── postcss.config.js               # PostCSS setup
@@ -132,8 +152,9 @@ MSMAHATHA_LIB/
 - **Node.js**: Version 14.x or higher
 - **npm**: Version 6.x or higher (or yarn/pnpm)
 - **Git**: For cloning the repository
+- **MongoDB**: Atlas account or local MongoDB instance (for backend)
 
-### Installation
+### Quick Start (Frontend Only)
 
 1. **Clone the repository**
 ```bash
@@ -141,7 +162,7 @@ git clone https://github.com/msmahatha/MSMAHATHA_LIB.git
 cd MSMAHATHA_LIB
 ```
 
-2. **Install dependencies**
+2. **Install frontend dependencies**
 ```bash
 npm install
 ```
@@ -152,21 +173,125 @@ npm run dev
 ```
 
 4. **Open in browser**
-Navigate to `http://localhost:5173` (or the port shown in terminal)
+Navigate to `http://localhost:5173`
+
+The app will work in **local mode** (using localStorage) without the backend.
+
+### Full Stack Setup (Frontend + Backend)
+
+#### 1. Setup Backend
+
+```bash
+# Navigate to server directory
+cd server
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env
+
+# Edit .env and add your MongoDB credentials
+# MONGODB_URI=mongodb+srv://madhusudanmahatha:<password>@cluster0.vkccwze.mongodb.net/msmahatha_lib
+# JWT_SECRET=your_secure_random_secret
+
+# Start backend server
+npm run dev
+```
+
+Backend will run on `http://localhost:5000`
+
+#### 2. Setup Frontend
+
+```bash
+# From project root
+npm install
+
+# Create environment file (optional, has defaults)
+cp .env.example .env
+
+# Start frontend
+npm run dev
+```
+
+Frontend will run on `http://localhost:5173` and connect to backend automatically.
+
+#### 3. Test the Connection
+
+- Register a new account
+- Login with credentials
+- Add books to stash (syncs to MongoDB)
+- Check browser DevTools Network tab for API calls
+
+### Environment Variables
+
+#### Frontend (`.env`)
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+#### Backend (`server/.env`)
+```env
+MONGODB_URI=mongodb+srv://madhusudanmahatha:<password>@cluster0.vkccwze.mongodb.net/msmahatha_lib
+JWT_SECRET=your_secure_random_secret
+PORT=5000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
+```
 
 ### Build for Production
 
+#### Frontend
 ```bash
 npm run build
 ```
 
 The optimized production build will be in the `dist/` directory.
 
+#### Backend
+```bash
+cd server
+npm start
+```
+
+Set `NODE_ENV=production` in `server/.env` for production mode.
+
 ### Preview Production Build
 
 ```bash
 npm run preview
 ```
+
+## 🔌 Backend API Overview
+
+The backend provides RESTful APIs for user management and data persistence.
+
+### Key Endpoints
+
+- **POST** `/api/auth/register` - Register new user
+- **POST** `/api/auth/login` - User login (returns JWT token)
+- **GET** `/api/auth/me` - Get current user data
+- **POST** `/api/user/stash` - Add book to stash
+- **DELETE** `/api/user/stash/:bookId` - Remove from stash
+- **POST** `/api/user/history` - Add to reading history
+- **PUT** `/api/user/settings` - Update user settings
+
+See `server/README.md` for complete API documentation.
+
+### Authentication Flow
+
+1. User registers or logs in via `/api/auth/register` or `/api/auth/login`
+2. Backend returns JWT token
+3. Frontend stores token in `localStorage`
+4. All subsequent requests include `Authorization: Bearer <token>` header
+5. Backend validates token and processes request
+
+### Data Synchronization
+
+- **Stash**: Syncs to MongoDB when logged in, localStorage when offline
+- **History**: Automatically tracked and synced (last 50 items)
+- **Settings**: Persisted to user profile in database
+- **Fallback**: App works offline using localStorage if backend unavailable
 
 ## 🎮 Usage Guide
 

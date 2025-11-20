@@ -17,7 +17,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
 
     if (!username.trim()) {
@@ -57,16 +57,35 @@ const AuthModal = ({ isOpen, onClose }) => {
       }
     }
 
-    // Simulate processing
+    if (mode === 'login' && !password) {
+      setError('PASSWORD REQUIRED');
+      return;
+    }
+
     setIsProcessing(true);
     playSound('click');
     
-    setTimeout(() => {
-      login(username);
+    try {
+      const result = await login(
+        username, 
+        password, 
+        mode === 'register', 
+        email, 
+        confirmPassword
+      );
+      
+      if (result.success) {
+        setIsProcessing(false);
+        onClose();
+        resetForm();
+      } else {
+        setError(result.message.toUpperCase());
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      setError('CONNECTION ERROR. TRY AGAIN.');
       setIsProcessing(false);
-      onClose();
-      resetForm();
-    }, 800);
+    }
   };
 
   const resetForm = () => {

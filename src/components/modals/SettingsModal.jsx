@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useSoundEffects } from '../../hooks/useSoundEffects';
 
 const SettingsModal = ({ isOpen, onClose }) => {
-  const { soundEnabled, setSoundEnabled, crtEnabled, setCrtEnabled } = useApp();
+  const { soundEnabled, setSoundEnabled, crtEnabled, setCrtEnabled, updateSettings } = useApp();
   const { playSound } = useSoundEffects();
 
   const handleClose = () => {
@@ -11,14 +11,22 @@ const SettingsModal = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const toggleSound = () => {
+  const toggleSound = async () => {
     playSound('click');
-    setSoundEnabled(!soundEnabled);
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    if (updateSettings) {
+      await updateSettings({ soundEnabled: newValue });
+    }
   };
 
-  const toggleCrt = () => {
+  const toggleCrt = async () => {
     playSound('click');
-    setCrtEnabled(!crtEnabled);
+    const newValue = !crtEnabled;
+    setCrtEnabled(newValue);
+    if (updateSettings) {
+      await updateSettings({ crtEffect: newValue });
+    }
   };
 
   useEffect(() => {
